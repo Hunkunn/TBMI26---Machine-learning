@@ -51,7 +51,7 @@ XTest = [XTest, ones(size(XTest,1), 1)];
 
 numIterations = 10000;  % Change this, number of iterations (epochs)
 learningRate  = 0.0001; % Change this, your learning rate
-W0 = randn(size(XTrain,2), size(DTrain,2))/10; % Change this, initialize your weight matrix W
+W0 = randn(size(XTrain,2), size(DTrain,2))/100; % Change this, initialize your weight matrix W
 
 % Run training loop
 tic;
