@@ -1,5 +1,6 @@
 %% Hyper-parameters
-clear all;
+clear
+clc
 % Number of randomized Haar-features
 nbrHaarFeatures = 100;
 % Number of training images, will be evenly split between faces and
@@ -89,6 +90,7 @@ for weightindex = 1:nbrWeakClassifiers
     alpha_t=(1/2)*log((1-Emin(1))/Emin(1));
     h(weightindex,:) = [alpha_t Emin];
     D=D.*exp(-alpha_t*(yTrain.*Cmin));
+    D = D/sum(D);
     
 end
 
@@ -96,29 +98,57 @@ end
 %  Evaluate on both the training data and test data, but only the test
 %  accuracy can be used as a performance metric since the training accuracy
 %  is biased.
+kek = zeros(nbrHaarFeatures,nbrTestImages);
+eachTestIteration = zeros(1, nbrWeakClassifiers);
+eachTrainIteration = zeros(1, nbrWeakClassifiers);
 for xd = 1:nbrWeakClassifiers
-    kek(xd,:) = h(xd,1)*( WeakClassifier(h(xd,4), h(xd,5), xTest(h(xd,3),:)));      
+    A = h(xd,1)*( WeakClassifier(h(xd,4), h(xd,5), xTest(h(xd,3),:)));
+    C = h(xd,1)*( WeakClassifier(h(xd,4), h(xd,5), xTrain(h(xd,3),:)));
+    kek(xd,:) = A;
+    tjeck(xd,:) = C;
+    B = sum(sign(sum(kek))~= yTest);
+    D = sum(sign(sum(tjeck))~= yTrain);
+    eachTestIteration(xd) = B/nbrTestImages;
+    eachTrainIteration(xd) = D/nbrTrainImages;
 end
-H = sign(sum(kek));
-
-%H = sign(sum(h(:,1).*h(:,2:end)));
-
-A = sum(H ~= yTest);
-Accuracy = 1 - A/nbrTestImages
+Accuracy = 1 - eachTestIteration(end)
 
 
 %% Plot the error of the strong classifier as a function of the number of weak classifiers.
 %  Note: you can find this error without re-training with a different
 %  number of weak classifiers.
-
-
+figure(4);
+hold on;
+plot(1:nbrWeakClassifiers,eachTestIteration, 'r')
+plot(1:nbrWeakClassifiers,eachTrainIteration, 'b')
+legend('test data', 'training data')
+xlabel('Number of weak classifiers')
+ylabel('Error')
+hold off;
 
 %% Plot some of the misclassified faces and non-faces
 %  Use the subplot command to make nice figures with multiple images.
+
+result = sign(sum(kek));
+missclassified = find(result ~= yTest);
+randompics = randi(size(missclassified),[1,4]);
+figure(5);
+colormap gray;
+
+for imagenr = 1:4
+    subplot(2,2,imagenr), imagesc(testImages(:,:,randompics(imagenr)));
+    axis image;
+end
 
 
 
 %% Plot your choosen Haar-features
 %  Use the subplot command to make nice figures with multiple images.
+figure(6);
+colormap gray;
 
-
+for i=1:100
+    subplot(10,10,i), imagesc(haarFeatureMasks(:,:,h(i,3)),[-1 2]);    
+    axis image;
+    axis off;
+end
