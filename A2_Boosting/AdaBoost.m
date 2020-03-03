@@ -57,6 +57,10 @@ xTest = ExtractHaarFeatures(testImages,haarFeatureMasks);
 yTest = [ones(1,size(faces,3)-nbrTrainImages/2), -ones(1,size(nonfaces,3)-nbrTrainImages/2)];
 
 % Variable for the number of test-data.
+nbrTestFaces = sum(yTest(:) == 1);
+nbrTestNonFaces = sum(yTest(:) == -1);
+nbrTrainFaces = sum(yTrain(:) == 1);
+nbrTrainNonFaces = sum(yTrain(:) == -1);
 nbrTestImages = length(yTest);
 
 %% Implement the AdaBoost training here
@@ -98,18 +102,18 @@ end
 %  Evaluate on both the training data and test data, but only the test
 %  accuracy can be used as a performance metric since the training accuracy
 %  is biased.
-kek = zeros(nbrHaarFeatures,nbrTestImages);
+testMat = zeros(nbrHaarFeatures,nbrTestImages);
 eachTestIteration = zeros(1, nbrWeakClassifiers);
 eachTrainIteration = zeros(1, nbrWeakClassifiers);
-for xd = 1:nbrWeakClassifiers
-    A = h(xd,1)*( WeakClassifier(h(xd,4), h(xd,5), xTest(h(xd,3),:)));
-    C = h(xd,1)*( WeakClassifier(h(xd,4), h(xd,5), xTrain(h(xd,3),:)));
-    kek(xd,:) = A;
-    tjeck(xd,:) = C;
-    B = sum(sign(sum(kek))~= yTest);
-    D = sum(sign(sum(tjeck))~= yTrain);
-    eachTestIteration(xd) = B/nbrTestImages;
-    eachTrainIteration(xd) = D/nbrTrainImages;
+for classifier = 1:nbrWeakClassifiers
+    A = h(classifier,1)*( WeakClassifier(h(classifier,4), h(classifier,5), xTest(h(classifier,3),:)));
+    C = h(classifier,1)*( WeakClassifier(h(classifier,4), h(classifier,5), xTrain(h(classifier,3),:)));
+    testMat(classifier,:) = A;
+    trainMat(classifier,:) = C;
+    B = sum(sign(sum(testMat))~= yTest);
+    D = sum(sign(sum(trainMat))~= yTrain);
+    eachTestIteration(classifier) = B/nbrTestImages;
+    eachTrainIteration(classifier) = D/nbrTrainImages;
 end
 Accuracy = 1 - eachTestIteration(end)
 
@@ -129,15 +133,16 @@ hold off;
 %% Plot some of the misclassified faces and non-faces
 %  Use the subplot command to make nice figures with multiple images.
 
-result = sign(sum(kek));
+result = sign(sum(testMat));
 missclassified = find(result ~= yTest);
-randompics = randi(size(missclassified),[1,4]);
+randompics = randi(size(yTest),[1,9]);
 figure(5);
 colormap gray;
 
-for imagenr = 1:4
-    subplot(2,2,imagenr), imagesc(testImages(:,:,randompics(imagenr)));
+for imagenr = 1:9
+    subplot(3,3,imagenr), imagesc(testImages(:,:,randompics(imagenr)));
     axis image;
+    axis off;
 end
 
 
@@ -147,8 +152,8 @@ end
 figure(6);
 colormap gray;
 
-for i=1:100
-    subplot(10,10,i), imagesc(haarFeatureMasks(:,:,h(i,3)),[-1 2]);    
+for i=1:25
+    subplot(5,5,i), imagesc(haarFeatureMasks(:,:,h(i,3)),[-1 2]);    
     axis image;
     axis off;
 end
